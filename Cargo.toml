@@ -1,0 +1,15 @@
+[package]
+name = "service-layer-rs"
+version = "0.1.2"
+edition = "2021"
+description = "A simple alternative to the tower service layer, implemented using async trait, making the code more concise and easier to use."
+authors = ["Thomson <tongshengzhou@gmail.com>"]
+license = "MIT OR Apache-2.0"
+
+include = [
+    "Cargo.toml",
+    "src/**/*",
+]
+
+[dependencies]
+#trait-variant = "0.1"
