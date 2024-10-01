@@ -2,7 +2,7 @@ mod test_service;
 mod test_service_fn;
 
 use service_layer_rs::service_fn::FnService;
-use service_layer_rs::{Layer, Service, ServiceBuilder};
+use service_layer_rs::{add_layer, Layer, Service, ServiceBuilder};
 use std::convert::Infallible;
 
 struct LogService<S> {
@@ -47,6 +47,10 @@ async fn main() {
     let svc = ServiceBuilder::new(svc)
         .layer(LogLayer("Test".to_string()))
         .build();
+
+    let svc = ServiceBuilder::new(svc);
+    let svc = add_layer(svc, LogLayer("Test2".to_string()));
+    let svc = svc.build();
 
     let ss = svc.boxed();
     let res: Result<String, Infallible> = ss.call("hello".to_owned()).await;

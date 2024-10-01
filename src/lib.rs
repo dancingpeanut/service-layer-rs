@@ -43,3 +43,13 @@ impl<S> ServiceBuilder<S> {
         self.inner.call(request).await
     }
 }
+
+pub fn add_layer<Request, L, T, S>(svc_builder: ServiceBuilder<S>, l: L) -> ServiceBuilder<T>
+where
+    S: Service<Request>,
+    T: Service<Request>,
+    L: Layer<S, T>,
+{
+    let inner = l.layer(svc_builder.build());
+    ServiceBuilder::new(inner)
+}

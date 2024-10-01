@@ -73,3 +73,14 @@ let svc = ServiceBuilder::new(svc)
 let res: Result<String, Infallible> = svc.call("hello".to_owned()).await;
 println!("{:?}", res);
 ```
+
+### ServiceBuilder add layer
+```rust
+let svc = ServiceBuilder::new(svc);
+
+// by .layer
+let svc = svc.layer(LogLayer("Test".to_string()));
+
+// by add_layer
+let svc = add_layer(svc, LogLayer("Test".to_string()));
+```
