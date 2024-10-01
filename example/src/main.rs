@@ -1,83 +1,54 @@
-use std::time::Duration;
-use service_layer_rs::{FnService, Layer, Service, ServiceBuilder};
+mod test_service;
+mod test_service_fn;
 
-struct LogMiddle<S> {
+use service_layer_rs::service_fn::FnService;
+use service_layer_rs::{Layer, Service, ServiceBuilder};
+use std::convert::Infallible;
+
+struct LogService<S> {
     svc: S,
     name: String,
 }
 
-impl<S, Request, Response> Service<Request, Response> for LogMiddle<S>
+impl<S, Request> Service<Request> for LogService<S>
 where
-    S: Service<Request, Response>,
+    S: Service<Request>,
+    Request: Send + 'static,
 {
-    async fn call(&self, req: Request) -> Response {
-        println!("start {} --->", self.name);
-        let resp = self.svc.call(req).await;
-        println!("end   {} <---", self.name);
-        resp
+    type Response = S::Response;
+    type Error = S::Error;
+
+    async fn call(
+        &self,
+        req: Request,
+    ) -> Result<Self::Response, Self::Error> {
+        println!("LogService<{}> start", self.name);
+        let res = self.svc.call(req).await;
+        println!("LogService<{}> end", self.name);
+        res
     }
 }
 
-struct LogMiddleLayer {
-    log: String,
-}
-impl<S> Layer<S, LogMiddle<S>> for LogMiddleLayer {
-    fn layer(self, svc: S) -> LogMiddle<S> {
-        LogMiddle { svc, name: self.log }
+struct LogLayer(String);
+
+impl<S: Send + Sync + 'static> Layer<S, LogService<S>> for LogLayer {
+    fn layer(self, svc: S) -> LogService<S> {
+        LogService { svc, name: self.0 }
     }
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-struct Timeout<S> {
-    svc: S,
-    sec: u64,
-}
-impl<S, Request, Response> Service<Request, Response> for Timeout<S>
-where
-    S: Service<Request, Response>,
-{
-    async fn call(&self, req: Request) -> Response {
-        println!("timeout{} sec", self.sec);
-        if let Ok(resp) = tokio::time::timeout(Duration::from_secs(self.sec), self.svc.call(req)).await {
-            println!("timeout end");
-            return resp;
-        } else {
-            panic!("timeout")
-        }
-    }
-}
-struct TimeoutLayer {
-    sec: u64,
-}
-impl<S> Layer<S, Timeout<S>> for TimeoutLayer {
-    fn layer(self, svc: S) -> Timeout<S> {
-        Timeout { svc, sec: self.sec }
-    }
-}
-
-async fn hello(_: &str) -> Result<&'static str, std::io::Error> {
-    println!("hello");
-    Ok("hello")
 }
 
 #[tokio::main]
 async fn main() {
-    let svc = FnService::new(hello);
-    let svc = ServiceBuilder::new(svc)
-        .layer(LogMiddleLayer { log: "log middle".into() })
-        .layer(TimeoutLayer { sec: 2 })
-        .build();
-    let resp = svc.call("1").await;
-    println!("{:?}", resp);
-
     let svc = FnService::new(|req: String| async move {
-        format!("hello {}", req)
+        println!("handle: {}", req);
+        Ok::<_, Infallible>(req)
     });
+
     let svc = ServiceBuilder::new(svc)
-        .layer(LogMiddleLayer { log: "test".into() })
+        .layer(LogLayer("Test".to_string()))
         .build();
-    svc.call("1".to_string()).await;
+
+    let ss = svc.boxed();
+    let res: Result<String, Infallible> = ss.call("hello".to_owned()).await;
+    println!("{:?}", res);
 }

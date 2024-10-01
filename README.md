@@ -3,46 +3,73 @@
 A simple alternative to the tower service layer, implemented using async trait, making the code more concise and easier to use.
 
 ## Example
-[example/src/main.rs](example/src/main.rs)
 
 ```rust
-use service_layer_rs::{FnService, Layer, Service, ServiceBuilder};
+use service_layer_rs::service_fn::FnService;
+use service_layer_rs::{Layer, Service, ServiceBuilder};
+use std::convert::Infallible;
 
-struct LogMiddle<S> {
+struct LogService<S> {
     svc: S,
-    name: String,
+    name: String
 }
 
-impl<S, Request, Response> Service<Request, Response> for LogMiddle<S>
+impl<S, Request> Service<Request> for LogService<S>
 where
-    S: Service<Request, Response>,
+    S: Service<Request>,
+    Request: Send + 'static,
 {
-    async fn call(&self, req: Request) -> Response {
-        println!("start {} --->", self.name);
-        let resp = self.svc.call(req).await;
-        println!("end   {} <---", self.name);
-        resp
+    type Response = S::Response;
+    type Error = S::Error;
+
+    async fn call(
+        &self,
+        req: Request,
+    ) -> Result<Self::Response, Self::Error> {
+        println!("LogService<{}> start", self.name);
+        let res = self.svc.call(req).await;
+        println!("LogService<{}> end", self.name);
+        res
     }
 }
 
-struct LogMiddleLayer {
-    log: String,
-}
+struct LogLayer(String);
 
-impl<S> Layer<S, LogMiddle<S>> for LogMiddleLayer {
-    fn layer(self, svc: S) -> LogMiddle<S> {
-        LogMiddle { svc, name: self.log }
+impl<S: Send + Sync + 'static> Layer<S, LogService<S>> for LogLayer {
+    fn layer(self, svc: S) -> LogService<S> {
+        LogService { svc, name: self.0 }
     }
 }
 
 #[tokio::main]
 async fn main() {
     let svc = FnService::new(|req: String| async move {
-        format!("hello {}", req);
+        println!("handle: {}", req);
+        Ok::<_, Infallible>(req)
     });
+
     let svc = ServiceBuilder::new(svc)
-        .layer(LogMiddleLayer { log: "test".into() })
+        .layer(LogLayer("Test".to_string()))
         .build();
-    svc.call("1".to_string()).await;
+
+    let res: Result<String, Infallible> = svc.call("hello".to_owned()).await;
+    println!("{:?}", res);
 }
+```
+
+### Dynamic Dispatch
+```rust
+let svc = FnService::new(|req: String| async move {
+    println!("handle: {}", req);
+    Ok::<_, Infallible>(req)
+});
+
+// Box this service to allow for dynamic dispatch.
+let svc = ServiceBuilder::new(svc)
+    .layer(LogLayer("Test".to_string()))
+    .build()
+    .boxed();
+
+let res: Result<String, Infallible> = svc.call("hello".to_owned()).await;
+println!("{:?}", res);
 ```
