@@ -1,41 +1,12 @@
 mod test_service;
 mod test_service_fn;
+mod test_layer;
+mod log_svc;
 
 use service_layer_rs::service_fn::FnService;
-use service_layer_rs::{add_layer, Layer, Service, ServiceBuilder};
+use service_layer_rs::{add_layer, Service, ServiceBuilder};
 use std::convert::Infallible;
-
-struct LogService<S> {
-    svc: S,
-    name: String,
-}
-
-impl<S, Request> Service<Request> for LogService<S>
-where
-    S: Service<Request>,
-    Request: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = S::Error;
-
-    async fn call(
-        &self,
-        req: Request,
-    ) -> Result<Self::Response, Self::Error> {
-        println!("LogService<{}> start", self.name);
-        let res = self.svc.call(req).await;
-        println!("LogService<{}> end", self.name);
-        res
-    }
-}
-
-struct LogLayer(String);
-
-impl<S: Send + Sync + 'static> Layer<S, LogService<S>> for LogLayer {
-    fn layer(self, svc: S) -> LogService<S> {
-        LogService { svc, name: self.0 }
-    }
-}
+use crate::log_svc::LogLayer;
 
 #[tokio::main]
 async fn main() {
