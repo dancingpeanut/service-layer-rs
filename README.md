@@ -5,6 +5,7 @@ A simple alternative to the tower service layer, implemented using async trait, 
 ## Example
 
 ```rust
+use service_layer_rs::util::FnService;
 use service_layer_rs::{FnService, Layer, Service, ServiceBuilder};
 use std::convert::Infallible;
 
@@ -47,9 +48,9 @@ where
 
 #[tokio::main]
 async fn main() {
-    let svc = FnService::new(|req: String| async move {
-        println!("handle: {}", req);
-        Ok::<_, Infallible>(req)
+    let svc = FnService::new(|request: String| async move {
+        println!("handle: {}", request);
+        Ok::<_, Infallible>(request)
     });
 
     let svc = ServiceBuilder::service(svc)
@@ -64,9 +65,9 @@ async fn main() {
 
 ### Dynamic Dispatch
 ```rust
-let svc = FnService::new(|req: String| async move {
-    println!("handle: {}", req);
-    Ok::<_, Infallible>(req)
+let svc = FnService::new(|request: String| async move {
+    println!("handle: {}", request);
+    Ok::<_, Infallible>(request)
 });
 
 // Box this service to allow for dynamic dispatch.
