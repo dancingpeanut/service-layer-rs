@@ -10,7 +10,7 @@ mod tests {
     #[tokio::test]
     async fn builder() {
         let svc = FnService::new(|req: String| async move { Ok::<_, Infallible>(req) });
-        let svc = ServiceBuilder::new(svc)
+        let svc = ServiceBuilder::service(svc)
             .layer(AppStrLayer("1".to_string()))
             .layer(AppStrLayer("2".to_string()))
             .layer(AppStrLayer("3".to_string()))

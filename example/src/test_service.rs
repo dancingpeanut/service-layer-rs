@@ -12,9 +12,9 @@ mod tests {
 
         async fn call(
             &self,
-            req: usize,
+            request: usize,
         ) -> Result<Self::Response, Self::Error> {
-            Ok(self.0 + req)
+            Ok(self.0 + request)
         }
     }
 
@@ -27,9 +27,9 @@ mod tests {
 
         async fn call(
             &self,
-            req: usize,
+            request: usize,
         ) -> Result<Self::Response, Self::Error> {
-            Ok(self.0 * req)
+            Ok(self.0 * request)
         }
     }
 

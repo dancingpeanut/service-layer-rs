@@ -1,7 +1,7 @@
 use service_layer_rs::{Layer, Service};
 
 pub struct LogService<S> {
-    svc: S,
+    inner: S,
     name: String,
 }
 
@@ -15,10 +15,10 @@ where
 
     async fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> Result<Self::Response, Self::Error> {
         println!("LogService<{}> start", self.name);
-        let res = self.svc.call(req).await;
+        let res = self.inner.call(request).await;
         println!("LogService<{}> end", self.name);
         res
     }
@@ -26,14 +26,19 @@ where
 
 pub struct LogLayer(pub String);
 
-impl<S: Send + Sync + 'static> Layer<S, LogService<S>> for LogLayer {
-    fn layer(self, svc: S) -> LogService<S> {
-        LogService { svc, name: self.0 }
+impl<S> Layer<S> for LogLayer
+where
+    S: Send + Sync + 'static
+{
+    type Service = LogService<S>;
+
+    fn layer(self, inner: S) -> Self::Service {
+        LogService { inner, name: self.0 }
     }
 }
 
 pub struct AppStrService<S> {
-    svc: S,
+    inner: S,
     name: String,
 }
 
@@ -46,17 +51,19 @@ where
 
     async fn call(
         &self,
-        req: String,
+        request: String,
     ) -> Result<Self::Response, Self::Error> {
-        let res = self.svc.call(req).await?;
+        let res = self.inner.call(request).await?;
         Ok(format!("{}:{}", res, self.name))
     }
 }
 
 pub struct AppStrLayer(pub String);
 
-impl<S: Send + Sync + 'static> Layer<S, AppStrService<S>> for AppStrLayer {
-    fn layer(self, svc: S) -> AppStrService<S> {
-        AppStrService { svc, name: self.0 }
+impl<S> Layer<S> for AppStrLayer {
+    type Service = AppStrService<S>;
+
+    fn layer(self, inner: S) -> Self::Service {
+        AppStrService { inner, name: self.0 }
     }
 }

@@ -5,13 +5,12 @@ A simple alternative to the tower service layer, implemented using async trait, 
 ## Example
 
 ```rust
-use service_layer_rs::service_fn::FnService;
-use service_layer_rs::{Layer, Service, ServiceBuilder};
+use service_layer_rs::{FnService, Layer, Service, ServiceBuilder};
 use std::convert::Infallible;
 
-struct LogService<S> {
-    svc: S,
-    name: String
+pub struct LogService<S> {
+    inner: S,
+    name: String,
 }
 
 impl<S, Request> Service<Request> for LogService<S>
@@ -24,20 +23,25 @@ where
 
     async fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> Result<Self::Response, Self::Error> {
         println!("LogService<{}> start", self.name);
-        let res = self.svc.call(req).await;
+        let res = self.inner.call(request).await;
         println!("LogService<{}> end", self.name);
         res
     }
 }
 
-struct LogLayer(String);
+pub struct LogLayer(pub String);
 
-impl<S: Send + Sync + 'static> Layer<S, LogService<S>> for LogLayer {
-    fn layer(self, svc: S) -> LogService<S> {
-        LogService { svc, name: self.0 }
+impl<S> Layer<S> for LogLayer
+where
+    S: Send + Sync + 'static
+{
+    type Service = LogService<S>;
+
+    fn layer(self, inner: S) -> Self::Service {
+        LogService { inner, name: self.0 }
     }
 }
 
@@ -48,11 +52,12 @@ async fn main() {
         Ok::<_, Infallible>(req)
     });
 
-    let svc = ServiceBuilder::new(svc)
+    let svc = ServiceBuilder::service(svc)
         .layer(LogLayer("Test".to_string()))
         .build();
 
-    let res: Result<String, Infallible> = svc.call("hello".to_owned()).await;
+    let ss = svc.boxed();
+    let res: Result<String, Infallible> = ss.call("hello".to_owned()).await;
     println!("{:?}", res);
 }
 ```
@@ -72,15 +77,4 @@ let svc = ServiceBuilder::new(svc)
 
 let res: Result<String, Infallible> = svc.call("hello".to_owned()).await;
 println!("{:?}", res);
-```
-
-### ServiceBuilder add layer
-```rust
-let svc = ServiceBuilder::new(svc);
-
-// by .layer
-let svc = svc.layer(LogLayer("Test".to_string()));
-
-// by add_layer
-let svc = add_layer(svc, LogLayer("Test".to_string()));
 ```

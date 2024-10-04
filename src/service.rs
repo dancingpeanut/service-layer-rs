@@ -12,7 +12,7 @@ pub trait Service<Request>: Sized + Send + Sync + 'static {
     /// Process the request and return the response asynchronously.
     fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> impl Future<Output=Result<Self::Response, Self::Error>> + Send + '_;
 
     /// Box this service to allow for dynamic dispatch.
@@ -33,9 +33,9 @@ where
     #[inline]
     fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> impl Future<Output=Result<Self::Response, Self::Error>> + Send + '_ {
-        self.as_ref().call(req)
+        self.as_ref().call(request)
     }
 }
 
@@ -49,9 +49,9 @@ where
     #[inline]
     fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> impl Future<Output=Result<Self::Response, Self::Error>> + Send + '_ {
-        (**self).call(req)
+        (**self).call(request)
     }
 }
 
@@ -65,9 +65,9 @@ where
     #[inline]
     fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> impl Future<Output=Result<Self::Response, Self::Error>> + Send + '_ {
-        self.as_ref().call(req)
+        self.as_ref().call(request)
     }
 }
 
@@ -82,7 +82,7 @@ trait DynService<Request> {
     #[allow(clippy::type_complexity)]
     fn serve_box(
         &self,
-        req: Request,
+        request: Request,
     ) -> Pin<Box<dyn Future<Output=Result<Self::Response, Self::Error>> + Send + '_>>;
 }
 
@@ -95,9 +95,9 @@ where
 
     fn serve_box(
         &self,
-        req: Request,
+        request: Request,
     ) -> Pin<Box<dyn Future<Output=Result<Self::Response, Self::Error>> + Send + '_>> {
-        Box::pin(self.call(req))
+        Box::pin(self.call(request))
     }
 }
 
@@ -137,8 +137,8 @@ where
 
     fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> impl Future<Output=Result<Self::Response, Self::Error>> + Send + '_ {
-        self.inner.serve_box(req)
+        self.inner.serve_box(request)
     }
 }

@@ -50,8 +50,8 @@ where
 
     fn call(
         &self,
-        req: Request,
+        request: Request,
     ) -> impl Future<Output=Result<Self::Response, Self::Error>> + Send + '_ {
-        (self.f)(req)
+        (self.f)(request)
     }
 }
