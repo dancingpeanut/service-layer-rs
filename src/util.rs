@@ -58,7 +58,6 @@ where
 }
 
 
-#[derive(Clone)]
 pub struct MapResponse<S, F> {
     inner: S,
     f: F,
@@ -67,7 +66,7 @@ pub struct MapResponse<S, F> {
 
 impl<S, F, Request, R> Service<Request> for MapResponse<S, F>
 where
-    S: Service<Request> + Clone + 'static,
+    S: Service<Request> + 'static,
     Request: Send + 'static,
     F: FnOnce(Result<S::Response, S::Error>) -> R + Clone + Sync + Send + 'static,
     R: Future<Output=Result<S::Response, S::Error>> + Send + 'static + Send,
@@ -112,7 +111,6 @@ where
 }
 
 /// Layer that maps the request of a service.
-#[derive(Clone)]
 pub struct MapRequest<S, F> {
     inner: S,
     f: F,
@@ -121,7 +119,7 @@ pub struct MapRequest<S, F> {
 
 impl<S, F, Request, R> Service<Request> for MapRequest<S, F>
 where
-    S: Service<Request> + Clone + 'static,
+    S: Service<Request> + 'static,
     Request: Send + 'static,
     F: FnOnce(Request) -> R + Clone + Sync + Send + 'static,
     R: Future<Output=Result<Request, S::Error>> + Send + 'static + Send,
