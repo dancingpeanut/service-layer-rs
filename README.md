@@ -6,7 +6,7 @@ A simple alternative to the tower service layer, implemented using async trait, 
 
 ```rust
 use service_layer_rs::util::FnService;
-use service_layer_rs::{FnService, Layer, Service, ServiceBuilder};
+use service_layer_rs::{Layer, Service, ServiceBuilder};
 use std::convert::Infallible;
 
 pub struct LogService<S> {

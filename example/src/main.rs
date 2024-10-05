@@ -2,6 +2,7 @@ mod test_service;
 mod test_service_fn;
 mod test_layer;
 mod log_svc;
+mod test_map_layer;
 
 use crate::log_svc::LogLayer;
 use service_layer_rs::util::FnService;
